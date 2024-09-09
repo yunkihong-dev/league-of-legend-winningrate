@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리그 오브 레전드 승률 예측</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>리그 오브 레전드<br> 승률 예측기</h1>
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="champion1">챔피언 1:</label>
+                <input type="text" id="champion1" name="champions" required>
+            </div>
+            <div class="form-group">
+                <label for="champion2">챔피언 2:</label>
+                <input type="text" id="champion2" name="champions" required>
+            </div>
+            <div class="form-group">
+                <label for="champion3">챔피언 3:</label>
+                <input type="text" id="champion3" name="champions" required>
+            </div>
+            <div class="form-group">
+                <label for="champion4">챔피언 4:</label>
+                <input type="text" id="champion4" name="champions" required>
+            </div>
+            <div class="form-group">
+                <label for="champion5">챔피언 5:</label>
+                <input type="text" id="champion5" name="champions" required>
+            </div>
+            <button type="submit" class="btn btn-primary">예측</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <!-- 모달 -->
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resultModalLabel">예측 결과</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    같은 챔피언이 여러개 들어갈 순 없어요.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('predictionForm').onsubmit = async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const champions = [];
+            formData.forEach((value) => {
+                champions.push(value);
+            });
+
+            // 중복 챔피언 확인
+            const uniqueChampions = new Set(champions);
+            if (uniqueChampions.size !== champions.length) {
+                $('#errorModal').modal('show');
+                return;
+            }
+
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            const probability = result.probability * 100; // 확률을 퍼센트로 변환
+            const roundedProbability = Math.round(probability * 10) / 10; // 첫 번째 자리에서 반올림
+
+            const modalBody = document.getElementById('modalBody');
+            if (roundedProbability >= 50) {
+                modalBody.innerText = `예측결과: ${roundedProbability}%의 확률로 이깁니다.`;
+            } else {
+                modalBody.innerText = `예측결과: ${roundedProbability}%의 확률로 집니다.`;
+            }
+            $('#resultModal').modal('show');
+        };
+    </script>
+</body>
+</html>
